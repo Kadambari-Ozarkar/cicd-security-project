@@ -11,7 +11,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'sudo docker build -t cicd-security-app:1.0 .'
+                sh 'docker build -t cicd-security-app:1.0 .'
             }
         }
     }
