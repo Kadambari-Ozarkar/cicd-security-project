@@ -7,26 +7,32 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
 
+        // Create HTTP server on port 8080
         HttpServer server = HttpServer.create(
-            new InetSocketAddress(8080), 0
+                new InetSocketAddress(8080), 0
         );
 
+        // Handle requests
         server.createContext("/", exchange -> {
 
             String response = "CI/CD Security Project is running!";
 
             exchange.sendResponseHeaders(
-                200,
-                response.getBytes().length
+                    200,
+                    response.getBytes().length
             );
 
-            OutputStream output = exchange.getResponseBody();
-            output.write(response.getBytes());
-            output.close();
+            try (OutputStream output = exchange.getResponseBody()) {
+                output.write(response.getBytes());
+            }
         });
 
+        // Start server
         server.start();
 
         System.out.println("Application running on port 8080");
+
+        // Keep Java process alive
+        Thread.currentThread().join();
     }
 }
