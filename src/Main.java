@@ -7,7 +7,7 @@ import java.net.InetSocketAddress;
 
 public class Main {
 
-```
+
 public static void main(String[] args) throws IOException {
 
     HttpServer server = HttpServer.create(
@@ -37,6 +37,6 @@ public static void main(String[] args) throws IOException {
 
     System.out.println("Application running on port 8080");
 }
-```
+
 
 }
