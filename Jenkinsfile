@@ -26,5 +26,21 @@ pipeline {
                 '''
             }
         }
+
+        stage('Push Docker Image') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKER_USERNAME',
+                    passwordVariable: 'DOCKER_PASSWORD'
+                )]) {
+                    sh '''
+                        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+                        docker tag cicd-security-app:1.0 $DOCKER_USERNAME/cicd-security-app:1.0
+                        docker push $DOCKER_USERNAME/cicd-security-app:1.0
+                    '''
+                }
+            }
+        }
     }
 }
