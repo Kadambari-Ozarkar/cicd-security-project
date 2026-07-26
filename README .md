@@ -43,6 +43,7 @@ Therefore, the CI/CD process was designed so that:
 
 ------------------------------------------------------------------------
 
+
 ## 3. Technologies Used
 
   -----------------------------------------------------------------------
@@ -70,11 +71,10 @@ Therefore, the CI/CD process was designed so that:
   Kubernetes Service                  Network access to the application
   -----------------------------------------------------------------------
 
-------------------------------------------------------------------------
 
 ## 4. Architecture
 
-``` text
+
                     Developer
                        |
                        | git push
@@ -117,26 +117,42 @@ Therefore, the CI/CD process was designed so that:
                               |
                               v
                          Application
-```
+
 
 ------------------------------------------------------------------------
+## 5. Project Structure
 
-## 5. Security Gating Logic
+cicd-security-project/
+│
+├── src/
+│   └── Main.java
+│
+├── k8s/
+│   ├── deployment.yaml
+│   └── service.yaml
+│
+├── Dockerfile
+├── Jenkinsfile
+├── README.md
+└── trivy-scan-report.txt
+
+------------------------------------------------------------------------
+## 6. Security Gating Logic
 
 The security gate is implemented in the Jenkins pipeline using Trivy.
 
 Example:
 
-``` bash
+bash
 trivy image --severity HIGH,CRITICAL --exit-code 1 cicd-security-app:1.1
-```
+
 
 ### Meaning of the options
 
--   `trivy image` scans a Docker image.
--   `--severity HIGH,CRITICAL` checks HIGH and CRITICAL severity
+-   trivy image scans a Docker image.
+-   --severity HIGH,CRITICAL` checks HIGH and CRITICAL severity
     vulnerabilities.
--   `--exit-code 1` makes Trivy return a non-zero exit code when
+-   --exit-code 1` makes Trivy return a non-zero exit code when
     matching vulnerabilities are found.
 
 Jenkins treats a non-zero exit code as a failed pipeline step.
@@ -154,11 +170,11 @@ Vulnerabilities >= configured threshold
               |
               v
       Deployment is skipped
-```
+
 
 When the scan passes:
 
-``` text
+ text
 No blocking vulnerabilities
               |
               v
@@ -169,41 +185,41 @@ No blocking vulnerabilities
               |
               v
       Push image + Deploy
-```
+
 
 This is the core security control of the project.
 
 ------------------------------------------------------------------------
 
-## 6. Application
+## 7. Application
 
 The application is a simple Java HTTP server.
 
 File:
 
-``` text
+text
 src/Main.java
-```
+
 
 The application listens on port `8080`.
 
 Example response:
 
-``` text
+ text
 CI/CD Security Project is running!
-```
+
 
 The application is intentionally simple because the main purpose of this
 project is to demonstrate CI/CD security automation.
 
 ------------------------------------------------------------------------
 
-## 7. Dockerfile
+## 8. Dockerfile
 
 The application is packaged into a Docker image using the Eclipse
 Temurin Java 21 image.
 
-``` dockerfile
+ dockerfile
 FROM eclipse-temurin:21-jdk-jammy
 
 WORKDIR /app
@@ -213,29 +229,29 @@ COPY src/Main.java .
 RUN javac Main.java
 
 CMD ["java", "Main"]
-```
+
 
 ### Docker build
 
 The Jenkins pipeline builds:
 
-``` bash
+ bash
 docker build -t cicd-security-app:1.1 .
-```
+
 
 The resulting image is:
 
-``` text
+ text
 cicd-security-app:1.1
-```
+
 
 ------------------------------------------------------------------------
 
-## 8. Jenkins Pipeline
+## 9. Jenkins Pipeline
 
 The Jenkins pipeline contains the following major stages:
 
-``` text
+ text
 Checkout
    |
 Build Docker Image
@@ -243,7 +259,7 @@ Build Docker Image
 Security Scan
    |
 Push and Deploy
-```
+
 
 ### Stage 1: Checkout
 
@@ -264,9 +280,9 @@ Jenkins creates the Docker image.
 
 Example:
 
-``` bash
+ bash
 docker build -t cicd-security-app:1.1 .
-```
+
 
 If the Docker build fails, the pipeline stops and the security scan is
 not executed.
@@ -279,29 +295,29 @@ Trivy scans the locally built image.
 
 Example:
 
-``` bash
+ bash
 trivy image --severity HIGH,CRITICAL --exit-code 1 cicd-security-app:1.1
-```
+
 
 This is the security gate.
 
 If blocking vulnerabilities are found:
 
-``` text
+ text
 Security Scan FAILED
        |
        v
 Push and Deploy SKIPPED
-```
+
 
 If the scan passes:
 
-``` text
+text
 Security Scan PASSED
        |
        v
 Push and Deploy CONTINUES
-```
+
 
 ------------------------------------------------------------------------
 
@@ -312,38 +328,36 @@ Docker Hub and updates Kubernetes.
 
 Example image:
 
-``` text
+ text
 kadambari0809/cicd-security-app:1.1
-```
+
 
 Kubernetes deployment is then updated:
 
-``` bash
+ bash
 kubectl set image deployment/cicd-security-app \
 cicd-security-app=kadambari0809/cicd-security-app:1.1
-```
 
 The pipeline verifies the rollout:
 
-``` bash
+bash
 kubectl rollout status deployment/cicd-security-app
-```
 
 A successful deployment produces:
 
-``` text
+text
 deployment "cicd-security-app" successfully rolled out
-```
+
 
 ------------------------------------------------------------------------
 
-## 9. Kubernetes Deployment
+## 10. Kubernetes Deployment
 
 The application runs inside a Kubernetes Deployment.
 
 Example:
 
-``` yaml
+ yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -363,20 +377,20 @@ spec:
           image: kadambari0809/cicd-security-app:1.1
           ports:
             - containerPort: 8080
-```
+
 
 The Deployment manages the application Pod and ensures the desired
 number of replicas are running.
 
 ------------------------------------------------------------------------
 
-## 10. Kubernetes Service
+## 11. Kubernetes Service
 
 A Service provides network access to the application.
 
 Example:
 
-``` yaml
+ yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -388,74 +402,71 @@ spec:
   ports:
     - port: 8080
       targetPort: 8080
-```
+
 
 The Service selects Pods using:
 
-``` yaml
+ yaml
 selector:
   app: cicd-security-app
-```
+
 
 The application container listens on:
-
-``` text
+ text
 8080
-```
-
 The Service forwards traffic to the application's container port.
 
 ------------------------------------------------------------------------
 
-## 11. Deployment Verification
+## 12. Deployment Verification
 
 After Jenkins deploys the image, Kubernetes can be verified using:
 
-``` bash
+ bash
 kubectl get pods
-```
+
 
 Expected example:
 
-``` text
+ text
 NAME                                  READY   STATUS    RESTARTS   AGE
 cicd-security-app-xxxxxxxxxx-xxxxx   1/1     Running   0          ...
-```
+
 
 Check the Deployment:
 
-``` bash
+ bash
 kubectl get deployment
-```
+
 
 Check the Service:
 
-``` bash
+ bash
 kubectl get svc
-```
+
 
 Check detailed Pod information:
 
-``` bash
+ bash
 kubectl describe pod <pod-name>
-```
+
 
 Check Deployment rollout:
 
-``` bash
+ bash
 kubectl rollout status deployment/cicd-security-app
-```
+
 
 ------------------------------------------------------------------------
 
-## 12. GitHub Webhook
+## 13. GitHub Webhook
 
 A GitHub webhook is used to automatically trigger Jenkins after code
 changes are pushed.
 
 Workflow:
 
-``` text
+text
 Developer
     |
     | git push
@@ -468,13 +479,13 @@ Jenkins
     |
     v
 Pipeline starts automatically
-```
+
 
 This removes the need to manually start every pipeline execution.
 
 ------------------------------------------------------------------------
 
-## 13. Vulnerability Failure Test
+## 14. Vulnerability Failure Test
 
 One of the project requirements is to intentionally introduce a
 vulnerable package and verify that the security gate blocks deployment.
@@ -484,13 +495,13 @@ in a temporary test image.
 
 Example test Dockerfile:
 
-``` dockerfile
+ dockerfile
 FROM ubuntu:20.04
 
 RUN apt-get update && apt-get install -y openssl
 
 CMD ["sleep", "3600"]
-```
+
 
 The test image is then scanned by Trivy.
 
@@ -499,12 +510,12 @@ returns a non-zero exit code.
 
 The Jenkins result should be:
 
-``` text
+ text
 Build Docker Image       SUCCESS
 Security Scan            FAILURE
 Push and Deploy          SKIPPED
 Pipeline                 FAILURE
-```
+
 
 This proves that the security gate is working.
 
@@ -513,13 +524,13 @@ restored.
 
 ------------------------------------------------------------------------
 
-## 14. Secure Pipeline Test
+## 15. Secure Pipeline Test
 
 The normal application image is scanned before deployment.
 
 Successful workflow:
 
-``` text
+text
 Docker Build
      |
      v
@@ -534,7 +545,7 @@ Kubernetes Deployment
      |
      v
 Rollout Successful
-```
+
 
 The Jenkins pipeline should finish with:
 
@@ -544,7 +555,7 @@ Finished: SUCCESS
 
 ------------------------------------------------------------------------
 
-## 15. Important Security Principle
+## 16. Important Security Principle
 
 The most important rule implemented by this project is:
 
@@ -569,9 +580,8 @@ environment.
 
 ------------------------------------------------------------------------
 
-## 16. Project Structure
+## 17. Project Structure
 
-``` text
 cicd-security-project/
 │
 ├── src/
@@ -585,44 +595,10 @@ cicd-security-project/
 ├── Jenkinsfile
 ├── README.md
 └── trivy-scan-report.txt
-```
+
 
 ------------------------------------------------------------------------
 
-## 17. Deliverables
-
-The project includes the following deliverables:
-
-### Jenkinsfile
-
-Defines the automated CI/CD pipeline.
-
-### Dockerfile
-
-Defines how the Java application is containerized.
-
-### Kubernetes YAML files
-
-Define the Deployment and Service.
-
-### Trivy scan report
-
-Provides evidence of the container security scan.
-
-### README
-
-Documents:
-
--   Project objective
--   Architecture
--   Technologies
--   Pipeline workflow
--   Security gating logic
--   Vulnerability test
--   Kubernetes deployment
--   Verification process
-
-------------------------------------------------------------------------
 
 ## 18. End-to-End Workflow
 
